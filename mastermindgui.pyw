@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 import random
+from time import sleep
 
 
 pygame.init()
@@ -72,13 +73,13 @@ def trackMouse():
             putImage(pin, pinPos)
 
     global onGo
-    if 730 < position[0] < 821 and 320 < position[1] < 382:
+    if 730 < position[0] < 821 and 415 < position[1] < 477:
         onGo += 1
         if onGo <= 5:
-            putImage("images/lightgobutton.png", (730, 320))
+            putImage("images/lightgobutton.png", (730, 415))
     else:
         onGo = 0
-        putImage("images/gobutton.png", (730, 320))
+        putImage("images/gobutton.png", (730, 415))
 
 
 def selectPin(color):
@@ -174,23 +175,28 @@ def result(guess, ai=False):
                         putImage(cowImage, (xCow, 735))
                     elif i == 4:
                         putImage(cowImage, (xCow + 22, 735))
-
+        global endGame
         if not ai:
             if currentGuess == playerCombination:
                 font = pygame.font.Font('freesansbold.ttf', 128)
                 text = font.render("YOU WIN !", True, black)
                 display.blit(text, (500, 300))
+                endGame = True
             elif attempts == 13:
                 font = pygame.font.Font('freesansbold.ttf', 116)
                 text = font.render("YOU LOST BITCH !", True, black)
-                display.blit(text, (450, 300))
+                display.blit(text, (320, 300))
+                endGame = True
             currentGuess = "****"
             return aiGuess()
         else:
             if bulls == 4:
-                font = pygame.font.Font('freesansbold.ttf', 128)
+                font = pygame.font.Font('freesansbold.ttf', 116)
                 text = font.render("YOU LOST BITCH !", True, black)
-                display.blit(text, (500, 300))
+                display.blit(text, (320, 300))
+                endGame = True
+            if not endGame:
+                putImage("images/bgfill.png", (xGuess - 5, 315))
             attempts += 1
             xGuess += 61
             xCow += 61
@@ -201,7 +207,6 @@ def result(guess, ai=False):
             holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
             currentGuess = "****"
             return aiAnalyse(guess, cows, bulls)
-
 
 
 possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
@@ -370,7 +375,6 @@ def aiAnalyse(answer, cows, bulls):
     # Returns the guess function until the answer matches the combination.
 
 
-
 def putImage(img, pos):
     loadedImg = pygame.image.load(img)
     display.blit(loadedImg, pos)
@@ -380,35 +384,68 @@ def putImage(img, pos):
 display = pygame.display.set_mode((1550, 900), RESIZABLE)
 pygame.display.set_caption("Mastermind")
 display.fill([120, 200, 200])
-picture = putImage("Images/board.png", (230, 0))
+putImage("Images/board.png", (230, 0))
 clock = pygame.time.Clock()
 playerCombination = generateCombination()
 aiCombination = generateCombination()
 running = True
+endGame = False
 
 
 while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONUP:
-            position = mousePosition()
-            for pin, pinPos in pinDict.items():
-                if pinPos[1] < position[1] < pinPos[1] + 41 and pinPos[0] < position[0] < pinPos[0] + 41:
-                    currentChoice = pin
-                    selectPin(currentChoice)
-            for index, hole in holeDict.items():
-                if hole[0] < position[0] < hole[0] + 45 and hole[1] < position[1] < hole[1] + 45:
-                    placePin(currentChoice, index, hole[0] - 4, hole[1] - 6)
+    while not endGame:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                endGame = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                position = mousePosition()
+                for pin, pinPos in pinDict.items():
+                    if pinPos[1] < position[1] < pinPos[1] + 41 and pinPos[0] < position[0] < pinPos[0] + 41:
+                        currentChoice = pin
+                        selectPin(currentChoice)
+                for index, hole in holeDict.items():
+                    if hole[0] < position[0] < hole[0] + 45 and hole[1] < position[1] < hole[1] + 45:
+                        placePin(currentChoice, index, hole[0] - 4, hole[1] - 6)
 
-            if 730 < position[0] < 821 and 320 < position[1] < 382:
-                putImage("images/clickedgobutton.png", (730, 320))
-                result(currentGuess)
+                if 730 < position[0] < 821 and 415 < position[1] < 477:
+                    putImage("images/clickedgobutton.png", (730, 415))
+                    result(currentGuess)
+        if not endGame:
+            putImage("images/arrow.png", (xGuess - 3, 315))
+        trackMouse()
+        pygame.display.update()
+        clock.tick(30)
 
-    trackMouse()
+    if running:
+        sleep(5)
+    display = pygame.display.set_mode((1550, 900), RESIZABLE)
+    pygame.display.set_caption("Mastermind")
+    display.fill([120, 200, 200])
+    putImage("Images/board.png", (230, 0))
+    clock = pygame.time.Clock()
+    playerCombination = generateCombination()
+    aiCombination = generateCombination()
+    endGame = False
+    possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
+    aiAnswers = []
+    excludedPosition = []
+    threeDigitsTest = False
+    threeDigits = []
+    correctNumbers = []
+    abandonnedNumber = ""
+    xGuess = 380
+    xCow = 378
+    holeOnePos = [xGuess, 95]
+    holeTwoPos = [xGuess, 152]
+    holeThreePos = [xGuess, 209]
+    holeFourPos = [xGuess, 263]
+    holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
+    currentChoice = ""
+    currentGuess = "****"
+    attempts = 0
 
-    pygame.display.update()
-    clock.tick(30)
 
 pygame.display.quit()
 pygame.quit()
+
