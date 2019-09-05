@@ -32,6 +32,8 @@ pinDict = {red: redPos, blue: bluePos, green: greenPos, pink: pinkPos, cyan: cya
            orange: orangePos, white: whitePos}
 pinValue = {red: "1", blue: "2", green: "3", pink: "4", cyan: "5", orange: "6", white: "7"}
 
+imgList = []
+
 xGuess = 380
 holeOnePos = [xGuess, 95]
 holeTwoPos = [xGuess, 152]
@@ -64,13 +66,23 @@ def mousePosition():
 
 
 def trackMouse():
+    global imgList
     position = mousePosition()
     for pin, pinPos in pinDict.items():
         if pinPos[1] < position[1] < pinPos[1] + 41 and pinPos[0] < position[0] < pinPos[0] + 41:
             if "selected" not in pin:
-                putImage("Images/light" + pin[7: len(pin)], pinPos)
+                if not colorblindMode:
+                    putImage("Images/light" + pin[7: len(pin)], pinPos)
+                else:
+                    putImage("Images/light" + pin[7: len(pin) - 4] + "cb.png", pinPos)
+
         else:
-            putImage(pin, pinPos)
+            if not colorblindMode:
+                putImage(pin, pinPos)
+            elif colorblindMode:
+                putImage(pin[:len(pin) - 4] + "cb.png", pinPos)
+            if (pin, pinPos) not in imgList:
+                imgList.append((pin, pinPos))
 
     global onGo
     if 730 < position[0] < 821 and 415 < position[1] < 477:
@@ -87,18 +99,33 @@ def selectPin(color):
         if color == pin:
             if "selected" not in pin:
                 pinDict["Images/selected" + pin[7: len(pin)]] = pinDict.pop(pin)
+                global imgList
+                for image in imgList:
+                    if "selected" in image:
+                        imglist.remove(image)
 
         else:
             if "selected" in pin:
                 pinDict["Images/" + pin[15: len(pin)]] = pinDict.pop(pin)
-            putImage(pin, pinPos)
+
+            if not colorblindMode:
+                putImage(pin, pinPos)
+            elif colorblindMode:
+                putImage(pin[:len(pin) - 4] + "cb.png", pinPos)
+            if (pin, pinPos) not in imgList:
+                imgList.append((pin, pinPos))
 
 
 def placePin(currentChoice, i, x, y):
     if currentChoice == "":
         return None
-
-    putImage(currentChoice, (x, y))
+    if not colorblindMode:
+        putImage(currentChoice, (x, y))
+    elif colorblindMode:
+        putImage(currentChoice[:len(currentChoice) - 4] + "cb.png", (x, y))
+    global imgList
+    if (currentChoice, (x, y)) not in imgList:
+        imgList.append((currentChoice, (x, y)))
 
     global currentGuess
     currentGuess = list(currentGuess)
@@ -390,7 +417,7 @@ playerCombination = generateCombination()
 aiCombination = generateCombination()
 running = True
 endGame = False
-
+colorblindMode = False
 
 while running:
     while not endGame:
@@ -411,8 +438,22 @@ while running:
                 if 730 < position[0] < 821 and 415 < position[1] < 477:
                     putImage("images/clickedgobutton.png", (730, 415))
                     result(currentGuess)
+                elif 1485 < position[0] < 1525 and 40 < position[1] < 80:
+                    if not colorblindMode:
+                        putImage("images/ticked.png", (1487, 38))
+                        colorblindMode = True
+                        for image in imgList:
+                            path = image[0]
+                            putImage(path[:len(path) - 4] + "cb" + ".png", image[1])
+                    else:
+                        putImage("images/unticked.png", (1487, 38))
+                        colorblindMode = False
+                        for image in imgList:
+                            putImage(image[0], image[1])
+
         if not endGame:
             putImage("images/arrow.png", (xGuess - 3, 315))
+        putImage("images/colorblindmode.png", (1320, 30))
         trackMouse()
         pygame.display.update()
         clock.tick(30)
@@ -444,6 +485,9 @@ while running:
     currentChoice = ""
     currentGuess = "****"
     attempts = 0
+    imgList = []
+    if colorblindMode:
+        putImage("images/ticked.png", (1487, 38))
 
 
 pygame.display.quit()
