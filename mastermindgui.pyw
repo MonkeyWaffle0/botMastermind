@@ -7,48 +7,82 @@ from time import sleep
 pygame.init()
 
 black = (0, 0, 0)
-transparent = (0, 0, 0, 0)
 
-cowImage = "Images/cow.png"
-bullImage = "Images/bull.png"
-xCow = 378
 
-red = "Images/red.png"
-blue = "Images/blue.png"
-green = "Images/green.png"
-pink = "Images/pink.png"
-cyan = "Images/cyan.png"
-orange = "Images/orange.png"
-white = "Images/white.png"
+# Pins that will be placed on the game board.
+class Pin:
+    def __init__(self, color, pos):
+        self.color = color
+        # Path to the pin's image.
+        self.path = "images/" + color + ".png"
+        # Position of the pin on the GUI.
+        self.pos = pos
+        # If the pin is currently selected or not.
+        self.selected = False
 
-redPos = [290, 30]
-bluePos = [290, 80]
-greenPos = [290, 130]
-pinkPos = [290, 180]
-cyanPos = [290, 230]
-orangePos = [290, 280]
-whitePos = [290, 330]
-pinDict = {red: redPos, blue: bluePos, green: greenPos, pink: pinkPos, cyan: cyanPos,
-           orange: orangePos, white: whitePos}
+    def select(self):
+        """Change the pin path to the image of the selected pin,
+        deselect every other pins."""
+        if not self.selected:
+            self.selected = True
+            global pinList
+            pinList.remove(self)
+            self.path = "images/selected" + self.color + ".png"
+            pinList.append(self)
+
+        for pin in pinList:
+            if pin.color != self.color:
+                if pin.selected:
+                    pin.deselect()
+
+    def deselect(self):
+        """Change the pin path to the image of the deselected pin."""
+        if self.selected:
+            self.selected = False
+            global pinList
+            pinList.remove(self)
+            self.path = "images/" + self.color + ".png"
+            pinList.append(self)
+
+
+# Creating the seven pins that player will use to select and place.
+red = Pin("red", (290, 30))
+blue = Pin("blue", (290, 80))
+green = Pin("green", (290, 130))
+pink = Pin("pink", (290, 180))
+cyan = Pin("cyan", (290, 230))
+orange = Pin("orange", (290, 280))
+white = Pin("white", (290, 330))
+
+pinList = [red, blue, green, pink, cyan, orange, white]
+# Values of the pins (could also be in the Pin class but I chose a dictionary.
 pinValue = {red: "1", blue: "2", green: "3", pink: "4", cyan: "5", orange: "6", white: "7"}
 
-imgList = []
-
+# Path to the cow and bull images.
+cowImage = "Images/cow.png"
+bullImage = "Images/bull.png"
+# Starting x value of the position of the cow and bull image.
+xCow = 378
+# Starting x value of the position of the pins images.
 xGuess = 380
+# List of all the pins images on the board, used to replace them when switching to colorblind mode.
+imgList = []
+# Position of the 4 holes where the player has to place the pins.
 holeOnePos = [xGuess, 95]
 holeTwoPos = [xGuess, 152]
 holeThreePos = [xGuess, 209]
 holeFourPos = [xGuess, 263]
 holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
-
+# Pin that is currently selected.
 currentChoice = ""
+# Player's answer, will be a 4 digits number.
 currentGuess = "****"
+# Attempts to guess the correct combination.
 attempts = 0
-
-onGo = 0
 
 
 def generateCombination():
+    """Generate a random 4 digits combination containing figures between 1 and 7 (each corresponding to a pin)."""
     combination = ""
     while len(combination) < 4:
         rand = random.randrange(1, 8)
@@ -61,29 +95,46 @@ def generateCombination():
 
 
 def mousePosition():
+    """Return a tuple corresponding to the position of the mouse."""
     pos = pygame.mouse.get_pos()
     return pos
 
 
+onGo = 0
 def trackMouse():
+    """Get the position of the mouse, if the mouse is over a pin, will load a highlighted image of the pin,
+    if the pin is selected, will load the selected image of the pin."""
     global imgList
     position = mousePosition()
-    for pin, pinPos in pinDict.items():
-        if pinPos[1] < position[1] < pinPos[1] + 41 and pinPos[0] < position[0] < pinPos[0] + 41:
-            if "selected" not in pin:
+    for pin in pinList:
+        # Checks if the mouse position is on a pin position.
+        if pin.pos[1] < position[1] < pin.pos[1] + 41 and pin.pos[0] < position[0] < pin.pos[0] + 41:
+            # If the pin is not selected, will load the highlighted image of the pin.
+            if not pin.selected:
                 if not colorblindMode:
-                    putImage("Images/light" + pin[7: len(pin)], pinPos)
+                    putImage("Images/light" + pin.color + ".png", pin.pos)
                 else:
-                    putImage("Images/light" + pin[7: len(pin) - 4] + "cb.png", pinPos)
+                    putImage("Images/light" + pin.color + "cb.png", pin.pos)
+            else:
+               if not colorblindMode:
+                   putImage(pin.path, pin.pos)
+               else:
+                   putImage("Images/selected" + pin.color + "cb.png", pin.pos)
 
+        # Loads every other pin images.
         else:
             if not colorblindMode:
-                putImage(pin, pinPos)
+                putImage(pin.path, pin.pos)
             elif colorblindMode:
-                putImage(pin[:len(pin) - 4] + "cb.png", pinPos)
-            if (pin, pinPos) not in imgList:
-                imgList.append((pin, pinPos))
+                if pin.selected:
+                    putImage("images/selected" + pin.color + "cb.png", pin.pos)
+                else:
+                    putImage("images/" + pin.color + "cb.png", pin.pos)
+            # If the tuple (image path, image position) is not in imgList, will add it to the list.
+            if (pin.path, pin.pos) not in imgList:
+                imgList.append((pin.path, pin.pos))
 
+    # If the mouse if over the go button, will highlight it.
     global onGo
     if 730 < position[0] < 821 and 415 < position[1] < 477:
         onGo += 1
@@ -94,49 +145,35 @@ def trackMouse():
         putImage("images/gobutton.png", (730, 415))
 
 
-def selectPin(color):
-    for pin, pinPos in pinDict.items():
-        if color == pin:
-            if "selected" not in pin:
-                pinDict["Images/selected" + pin[7: len(pin)]] = pinDict.pop(pin)
-                global imgList
-                for image in imgList:
-                    if "selected" in image:
-                        imglist.remove(image)
-
-        else:
-            if "selected" in pin:
-                pinDict["Images/" + pin[15: len(pin)]] = pinDict.pop(pin)
-
-            if not colorblindMode:
-                putImage(pin, pinPos)
-            elif colorblindMode:
-                putImage(pin[:len(pin) - 4] + "cb.png", pinPos)
-            if (pin, pinPos) not in imgList:
-                imgList.append((pin, pinPos))
-
-
-def placePin(currentChoice, i, x, y):
+def placePin(currentChoice, index, x, y):
+    """Place the image of the selected pin on the hole the player clicked on.
+    Then change the currentGuess according to what to player chose.
+    index corresponds to the hole the player clicked on."""
     if currentChoice == "":
         return None
+    # Puts the image of the pin on the hole.
     if not colorblindMode:
-        putImage(currentChoice, (x, y))
+        putImage("images/" + currentChoice.color + ".png", (x, y))
     elif colorblindMode:
-        putImage(currentChoice[:len(currentChoice) - 4] + "cb.png", (x, y))
+        putImage("images/" + currentChoice.color + "cb.png", (x, y))
     global imgList
-    if (currentChoice, (x, y)) not in imgList:
-        imgList.append((currentChoice, (x, y)))
+    if ("images/" + currentChoice.color + ".png", (x, y)) not in imgList:
+        imgList.append(("images/" + currentChoice.color + ".png", (x, y)))
 
+    # Replace the index value in currentGuess with the pin value of the selected pin.
     global currentGuess
     currentGuess = list(currentGuess)
     for pin, value in pinValue.items():
         if pin == currentChoice:
-            currentGuess[i] = value
+            currentGuess[index] = value
 
     currentGuess = "".join(currentGuess)
 
 
 def result(guess, ai=False):
+    """Analyse how many cows and bulls the player got, then put the cows and bulls images according to the result.
+    Then return aiGuess function so the AI will generate a combination.
+    If ai = True then it will analyse the AI's guess."""
     if "*" not in guess:
         global currentGuess, xGuess, holeOnePos, holeTwoPos, holeThreePos, holeFourPos, holeDict, xCow, attempts
         if not ai:
@@ -155,6 +192,8 @@ def result(guess, ai=False):
                     cows += 1
                 # Change the matching number so that it won't be analysed again.
                 guessingCombination[i] = "*"
+
+        # Put the cows and bulls images.
         i = 0
         if not ai:
             if bulls > 0:
@@ -202,6 +241,9 @@ def result(guess, ai=False):
                         putImage(cowImage, (xCow, 735))
                     elif i == 4:
                         putImage(cowImage, (xCow + 22, 735))
+
+        # If the player or the AI got the right combination (4 bulls), will display a winning/losing text and stop
+        # the current game loop.
         global endGame
         if not ai:
             if currentGuess == playerCombination:
@@ -222,6 +264,9 @@ def result(guess, ai=False):
                 text = font.render("YOU LOST BITCH !", True, black)
                 display.blit(text, (320, 300))
                 endGame = True
+
+            # If neither the player or the AI got the right combination, will increment xGuess and xCow so the player
+            # can play on the next row of holes.
             if not endGame:
                 putImage("images/bgfill.png", (xGuess - 5, 315))
             attempts += 1
@@ -235,13 +280,19 @@ def result(guess, ai=False):
             currentGuess = "****"
             return aiAnalyse(guess, cows, bulls)
 
-
+# List of the possible digits the AI can choose.
 possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
+# List of the answer tha AI already gave.
 aiAnswers = []
+# Contains tuples (index, value) of excluded positions for the AI.
 excludedPosition = []
+# If the AI gets a least 3 cows and bulls, will do a three digits test for the next guess.
 threeDigitsTest = False
+# List of the three digits the AI will test.
 threeDigits = []
+# List of the digits that are in the AI's combination.
 correctNumbers = []
+# Digit the AI abandonned during the three digits test.
 abandonnedNumber = ""
 
 
@@ -328,18 +379,20 @@ def aiGuess():
 
 
 def aiPlay(answer):
+    """Puts the images of the pins the AI chose, returns the result function for the AI."""
     global xGuess, xCow
     y = 483
     answer = list(answer)
     for digit in answer:
         for pin, value in pinValue.items():
             if digit == value:
-                putImage(pin, (xGuess - 4, y))
+                putImage("images/" + pin.color + ".png", (xGuess - 4, y))
                 y += 56
     return result(answer, ai=True)
 
 
 def aiAnalyse(answer, cows, bulls):
+    """Make decisions according to the result the AI got."""
     global threeDigitsTest, abandonnedNumber, threeDigits, correctNumbers, possibleNumbers
     if threeDigitsTest:
         if cows + bulls == 2:
@@ -349,10 +402,12 @@ def aiAnalyse(answer, cows, bulls):
         threeDigits = []
         abandonnedNumber = ""
 
+    # If there are no bulls, adds the current position to the excludedPosition list.
     if bulls == 0:
         for i, number in enumerate(answer):
             excludedPosition.append((i, number))
 
+    # If there are as many cows and bulls as correct numbers, will remove the other digits from the possible numbers.
     if cows + bulls == len(correctNumbers):
         allCorrect = True
         for number in correctNumbers:
@@ -366,6 +421,8 @@ def aiAnalyse(answer, cows, bulls):
                         if position[1] == number:
                             excludedPosition.remove(position)
 
+    # If cows + bulls == 3, will run a three digits test. Meaning it will put 3 of the current digits in the next
+    # guess.
     if cows + bulls == 3:
         threeDigitsTest = True
         for number in answer:
@@ -399,15 +456,16 @@ def aiAnalyse(answer, cows, bulls):
             for position in excludedPosition:
                 if position[1] == number:
                     excludedPosition.remove(position)
-    # Returns the guess function until the answer matches the combination.
 
 
 def putImage(img, pos):
+    """Load an image and blit it to the display."""
     loadedImg = pygame.image.load(img)
     display.blit(loadedImg, pos)
     return loadedImg
 
 
+# Setting up the display.
 display = pygame.display.set_mode((1550, 900), RESIZABLE)
 pygame.display.set_caption("Mastermind")
 display.fill([120, 200, 200])
@@ -419,7 +477,9 @@ running = True
 endGame = False
 colorblindMode = False
 
+# Running loop
 while running:
+    # Loop of a game, when the game is over, will reset the display and start the loop again.
     while not endGame:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -427,10 +487,10 @@ while running:
                 endGame = True
             elif event.type == pygame.MOUSEBUTTONUP:
                 position = mousePosition()
-                for pin, pinPos in pinDict.items():
-                    if pinPos[1] < position[1] < pinPos[1] + 41 and pinPos[0] < position[0] < pinPos[0] + 41:
+                for pin in pinList:
+                    if pin.pos[1] < position[1] < pin.pos[1] + 41 and pin.pos[0] < position[0] < pin.pos[0] + 41:
                         currentChoice = pin
-                        selectPin(currentChoice)
+                        pin.select()
                 for index, hole in holeDict.items():
                     if hole[0] < position[0] < hole[0] + 45 and hole[1] < position[1] < hole[1] + 45:
                         placePin(currentChoice, index, hole[0] - 4, hole[1] - 6)
@@ -458,6 +518,7 @@ while running:
         pygame.display.update()
         clock.tick(30)
 
+    # Resets the display and variables for a new game to start.
     if running:
         sleep(5)
     display = pygame.display.set_mode((1550, 900), RESIZABLE)
