@@ -1,5 +1,8 @@
+"""Game of Mastermind using pygame."""
+
 import pygame
 from pygame.locals import *
+
 import random
 from time import sleep
 
@@ -14,7 +17,7 @@ class Pin:
     def __init__(self, color, pos):
         self.color = color
         # Path to the pin's image.
-        self.path = "images/" + color + ".png"
+        self.path = "Images/" + color + ".png"
         # Position of the pin on the GUI.
         self.pos = pos
         # If the pin is currently selected or not.
@@ -27,7 +30,7 @@ class Pin:
             self.selected = True
             global pinList
             pinList.remove(self)
-            self.path = "images/selected" + self.color + ".png"
+            self.path = "Images/selected" + self.color + ".png"
             pinList.append(self)
 
         for pin in pinList:
@@ -41,7 +44,7 @@ class Pin:
             self.selected = False
             global pinList
             pinList.remove(self)
-            self.path = "images/" + self.color + ".png"
+            self.path = "Images/" + self.color + ".png"
             pinList.append(self)
 
 
@@ -127,9 +130,9 @@ def trackMouse():
                 putImage(pin.path, pin.pos)
             elif colorblindMode:
                 if pin.selected:
-                    putImage("images/selected" + pin.color + "cb.png", pin.pos)
+                    putImage("Images/selected" + pin.color + "cb.png", pin.pos)
                 else:
-                    putImage("images/" + pin.color + "cb.png", pin.pos)
+                    putImage("Images/" + pin.color + "cb.png", pin.pos)
             # If the tuple (image path, image position) is not in imgList, will add it to the list.
             if (pin.path, pin.pos) not in imgList:
                 imgList.append((pin.path, pin.pos))
@@ -139,10 +142,10 @@ def trackMouse():
     if 730 < position[0] < 821 and 415 < position[1] < 477:
         onGo += 1
         if onGo <= 5:
-            putImage("images/lightgobutton.png", (730, 415))
+            putImage("Images/lightgobutton.png", (730, 415))
     else:
         onGo = 0
-        putImage("images/gobutton.png", (730, 415))
+        putImage("Images/gobutton.png", (730, 415))
 
 
 def placePin(currentChoice, index, x, y):
@@ -153,12 +156,12 @@ def placePin(currentChoice, index, x, y):
         return None
     # Puts the image of the pin on the hole.
     if not colorblindMode:
-        putImage("images/" + currentChoice.color + ".png", (x, y))
+        putImage("Images/" + currentChoice.color + ".png", (x, y))
     elif colorblindMode:
-        putImage("images/" + currentChoice.color + "cb.png", (x, y))
+        putImage("Images/" + currentChoice.color + "cb.png", (x, y))
     global imgList
-    if ("images/" + currentChoice.color + ".png", (x, y)) not in imgList:
-        imgList.append(("images/" + currentChoice.color + ".png", (x, y)))
+    if ("Images/" + currentChoice.color + ".png", (x, y)) not in imgList:
+        imgList.append(("Images/" + currentChoice.color + ".png", (x, y)))
 
     # Replace the index value in currentGuess with the pin value of the selected pin.
     global currentGuess
@@ -268,7 +271,7 @@ def result(guess, ai=False):
             # If neither the player or the AI got the right combination, will increment xGuess and xCow so the player
             # can play on the next row of holes.
             if not endGame:
-                putImage("images/bgfill.png", (xGuess - 5, 315))
+                putImage("Images/bgfill.png", (xGuess - 5, 315))
             attempts += 1
             xGuess += 61
             xCow += 61
@@ -279,6 +282,7 @@ def result(guess, ai=False):
             holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
             currentGuess = "****"
             return aiAnalyse(guess, cows, bulls)
+
 
 # List of the possible digits the AI can choose.
 possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
@@ -297,7 +301,7 @@ abandonnedNumber = ""
 
 
 def aiGuess():
-    """Ai will generate a random combination, choosing digits one by one, taking account of the excludedPositions
+    """AI will generate a random combination, choosing digits one by one, taking account of the excludedPositions
     and the possibleNumbers."""
     global threeDigits, threeDigitsTest
     looptest = 0
@@ -386,7 +390,7 @@ def aiPlay(answer):
     for digit in answer:
         for pin, value in pinValue.items():
             if digit == value:
-                putImage("images/" + pin.color + ".png", (xGuess - 4, y))
+                putImage("Images/" + pin.color + ".png", (xGuess - 4, y))
                 y += 56
     return result(answer, ai=True)
 
@@ -465,62 +469,8 @@ def putImage(img, pos):
     return loadedImg
 
 
-# Setting up the display.
-display = pygame.display.set_mode((1550, 900), RESIZABLE)
-pygame.display.set_caption("Mastermind")
-display.fill([120, 200, 200])
-putImage("Images/board.png", (230, 0))
-clock = pygame.time.Clock()
-playerCombination = generateCombination()
-aiCombination = generateCombination()
-running = True
-endGame = False
-colorblindMode = False
-
-# Running loop
-while running:
-    # Loop of a game, when the game is over, will reset the display and start the loop again.
-    while not endGame:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                endGame = True
-            elif event.type == pygame.MOUSEBUTTONUP:
-                position = mousePosition()
-                for pin in pinList:
-                    if pin.pos[1] < position[1] < pin.pos[1] + 41 and pin.pos[0] < position[0] < pin.pos[0] + 41:
-                        currentChoice = pin
-                        pin.select()
-                for index, hole in holeDict.items():
-                    if hole[0] < position[0] < hole[0] + 45 and hole[1] < position[1] < hole[1] + 45:
-                        placePin(currentChoice, index, hole[0] - 4, hole[1] - 6)
-
-                if 730 < position[0] < 821 and 415 < position[1] < 477:
-                    putImage("images/clickedgobutton.png", (730, 415))
-                    result(currentGuess)
-                elif 1485 < position[0] < 1525 and 40 < position[1] < 80:
-                    if not colorblindMode:
-                        putImage("images/ticked.png", (1487, 38))
-                        colorblindMode = True
-                        for image in imgList:
-                            path = image[0]
-                            putImage(path[:len(path) - 4] + "cb" + ".png", image[1])
-                    else:
-                        putImage("images/unticked.png", (1487, 38))
-                        colorblindMode = False
-                        for image in imgList:
-                            putImage(image[0], image[1])
-
-        if not endGame:
-            putImage("images/arrow.png", (xGuess - 3, 315))
-        putImage("images/colorblindmode.png", (1320, 30))
-        trackMouse()
-        pygame.display.update()
-        clock.tick(30)
-
-    # Resets the display and variables for a new game to start.
-    if running:
-        sleep(5)
+if __name__ == "__main__":
+    # Setting up the display.
     display = pygame.display.set_mode((1550, 900), RESIZABLE)
     pygame.display.set_caption("Mastermind")
     display.fill([120, 200, 200])
@@ -528,29 +478,84 @@ while running:
     clock = pygame.time.Clock()
     playerCombination = generateCombination()
     aiCombination = generateCombination()
+    running = True
     endGame = False
-    possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
-    aiAnswers = []
-    excludedPosition = []
-    threeDigitsTest = False
-    threeDigits = []
-    correctNumbers = []
-    abandonnedNumber = ""
-    xGuess = 380
-    xCow = 378
-    holeOnePos = [xGuess, 95]
-    holeTwoPos = [xGuess, 152]
-    holeThreePos = [xGuess, 209]
-    holeFourPos = [xGuess, 263]
-    holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
-    currentChoice = ""
-    currentGuess = "****"
-    attempts = 0
-    imgList = []
-    if colorblindMode:
-        putImage("images/ticked.png", (1487, 38))
+    colorblindMode = False
+
+    # Running loop
+    while running:
+        # Loop of a game, when the game is over, will reset the display and start the loop again.
+        while not endGame:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    endGame = True
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    position = mousePosition()
+                    for pin in pinList:
+                        if pin.pos[1] < position[1] < pin.pos[1] + 41 and pin.pos[0] < position[0] < pin.pos[0] + 41:
+                            currentChoice = pin
+                            pin.select()
+                    for index, hole in holeDict.items():
+                        if hole[0] < position[0] < hole[0] + 45 and hole[1] < position[1] < hole[1] + 45:
+                            placePin(currentChoice, index, hole[0] - 4, hole[1] - 6)
+
+                    if 730 < position[0] < 821 and 415 < position[1] < 477:
+                        putImage("Images/clickedgobutton.png", (730, 415))
+                        result(currentGuess)
+                    elif 1485 < position[0] < 1525 and 40 < position[1] < 80:
+                        if not colorblindMode:
+                            putImage("Images/ticked.png", (1487, 38))
+                            colorblindMode = True
+                            for image in imgList:
+                                path = image[0]
+                                putImage(path[:len(path) - 4] + "cb" + ".png", image[1])
+                        else:
+                            putImage("Images/unticked.png", (1487, 38))
+                            colorblindMode = False
+                            for image in imgList:
+                                putImage(image[0], image[1])
+
+            if not endGame:
+                putImage("Images/arrow.png", (xGuess - 3, 315))
+            putImage("Images/colorblindmode.png", (1320, 30))
+            trackMouse()
+            pygame.display.update()
+            clock.tick(30)
+
+        # Resets the display and variables for a new game to start.
+        if running:
+            sleep(5)
+        display = pygame.display.set_mode((1550, 900), RESIZABLE)
+        pygame.display.set_caption("Mastermind")
+        display.fill([120, 200, 200])
+        putImage("Images/board.png", (230, 0))
+        clock = pygame.time.Clock()
+        playerCombination = generateCombination()
+        aiCombination = generateCombination()
+        endGame = False
+        possibleNumbers = ["1", "2", "3", "4", "5", "6", "7"]
+        aiAnswers = []
+        excludedPosition = []
+        threeDigitsTest = False
+        threeDigits = []
+        correctNumbers = []
+        abandonnedNumber = ""
+        xGuess = 380
+        xCow = 378
+        holeOnePos = [xGuess, 95]
+        holeTwoPos = [xGuess, 152]
+        holeThreePos = [xGuess, 209]
+        holeFourPos = [xGuess, 263]
+        holeDict = {0: holeOnePos, 1: holeTwoPos, 2: holeThreePos, 3: holeFourPos}
+        currentChoice = ""
+        currentGuess = "****"
+        attempts = 0
+        imgList = []
+        if colorblindMode:
+            putImage("Images/ticked.png", (1487, 38))
 
 
-pygame.display.quit()
-pygame.quit()
+    pygame.display.quit()
+    pygame.quit()
 
